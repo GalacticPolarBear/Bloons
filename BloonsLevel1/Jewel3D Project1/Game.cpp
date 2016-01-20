@@ -8,6 +8,9 @@
 #include <Jewel_Entity/Components/Camera.h>
 #include <Jewel_Entity/Components/Material.h>
 #include <Jewel_Entity/Components/Sprite.h>
+#include <Jewel_Entity/Components/Text.h>
+#include <Jewel_Utilities\Random.h>
+#include <Jewel_Rendering\Primitives.h>
 Game::Game(ConfigTable &config)
 	: Config(config)
 {
@@ -24,34 +27,48 @@ bool Game::Init()
 	if (!AssetLoader.LoadShader("./Assets/Shaders/Default/Sprite.shader", AlienSprite)) return false;
 	if (!AssetLoader.LoadSprite("./Assets/Textures/Alien.png", AlienSprite, false)) return false;
 
+	if (!AssetLoader.LoadFont("./Assets/Fonts/georgia_64.font", MousePosText)) return false;
+	if (!AssetLoader.LoadShader("./Assets/Shaders/Default/Font.shader", MousePosText)) return false;
+	
+	//Setup Font Properties
+	MousePosText.GetComponent<Material>()->SetBlendMode(BlendFunc::Linear);
+	MousePosText.GetComponent<Text>()->String="fuck is this?";
+	MousePosText.GetComponent<Text>()->ScaleX = 0.5f;
+	MousePosText.GetComponent<Text>()->ScaleY = 0.5f;
+
+
 	//Setup Sprite with Materials and centered position
 	AlienSprite.GetComponent<Material>()->SetBlendMode(BlendFunc::Linear);
 	AlienSprite.GetComponent<Sprite>()->SetCenteredX(true);
 	AlienSprite.GetComponent<Sprite>()->SetCenteredY(true);
 	AlienSprite.Transform.Scale(vec3(50,50,1));
-	AlienSprite.Transform.Position = vec3(Input::GetMouseX(), Input::GetMouseY(), 0);
+	AlienSprite.Transform.Position = vec3(802, 720,0);
 	AlienSprite.AddComponent<Alien>();
 
-	//[11:56:59 AM] Emi: left = -width/2, right = width/2, top = height/2, bottom = -height/2
-    //[11:57 : 15 AM] Emi: and far / near as like 1000 and -1000
-
+	
+	
+	//AlienSprite.GetComponent<Alien>()->AlienPath.AddNode(vec2(802,720));
+	AlienSprite.GetComponent<Alien>()->AlienPath.AddNode(vec2(810,652));
+	AlienSprite.GetComponent<Alien>()->AlienPath.AddNode(vec2(1058,648));
+	AlienSprite.GetComponent<Alien>()->AlienPath.AddNode(vec2(1079,220));
+	AlienSprite.GetComponent<Alien>()->AlienPath.AddNode(vec2(734,250));
+	AlienSprite.GetComponent<Alien>()->AlienPath.AddNode(vec2(608,512));
+	AlienSprite.GetComponent<Alien>()->AlienPath.AddNode(vec2(349,493));
+	AlienSprite.GetComponent<Alien>()->AlienPath.AddNode(vec2(348,143));
+	AlienSprite.GetComponent<Alien>()->AlienPath.AddNode(vec2(0,117));
+	
+	
 	//Add to the Rendergroup for display
 	MainGroup.AddEntity(AlienSprite);
-	//RootNode.Transform.AddChild(AlienSprite.Transform);
-	float Top = Console::GetScreenHeight();
-	float Bottom = -Console::GetScreenHeight();
-	float Left = -Console::GetScreenWidth();
-	float Right = Console::GetScreenWidth();
-
+	MainGroup.AddEntity(MousePosText);
+	
 	//Setup Camera
-	MainCamera.AddComponent<Camera>()->SetOrthograpic(Top, 0, 0, Right, -1, 1000);
-
+	MainCamera.AddComponent<Camera>()->SetOrthograpic(Console::GetScreenHeight(), 0, 0, Console::GetScreenWidth(), -1, 1000);
 	MainCamera.Transform.Position = vec3(0.0f, 0.0f, 0.0f);
-	//MainCamera.Transform.RotateX(-20.0f);
-
+	
 	//Setup up renderer
 	MainRenderPass.SetCamera(MainCamera);
-	MainRenderPass.SetRenderGroup(MainGroup);
+	MainRenderPass.SetGroup(MainGroup);
 	
 	//Setup background color
 	SetClearColor(0.35f, 0.7f, 0.9f, 0.0f); //cornflower blue
@@ -83,7 +100,7 @@ void Game::Update(float deltaTime)
 		AlienSprite.Transform.Position += vec3(0, 10, 0);
 	}
 	
-	
+	MousePosText.GetComponent<Text>()->String = "Mouse X = " + std::to_string(Input::GetMouseX()) + " Mouse Y = " + std::to_string(Input::GetMouseY());
 	//Update game objects here...
 	AlienSprite.GetComponent<Alien>()->Update(deltaTime);
 	//AlienSprite.Transform.Position = vec3(Input::GetMouseX(), -(Input::GetMouseY() - Console::GetScreenHeight()), 0);
@@ -97,5 +114,12 @@ void Game::Draw()
 
 	MainRenderPass.Render();
 
+	MainCamera.GetComponent<Camera>()->Bind();
+	auto points = AlienSprite.GetComponent<Alien>()->AlienPath.GetNodes();
+
+	for (int i = 0; i < points.size() - 1; ++i)
+	{
+		Primitives::DrawLine(vec3(points[i].x, points[i].y, 0), vec3(points[i + 1].x, points[i + 1].y, 0), vec4(0, 0, 1, 1));
+	}
 	SwapBuffers();
 }

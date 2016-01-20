@@ -18,7 +18,7 @@ namespace Jwl
 		
 		//Class functions
 		void Update(float);
-		void PathFollowing();
+		vec2 PathFollowing();
 		float Distance(vec2&, vec2&);
 		vec2 Seek(vec2&);
 
@@ -27,7 +27,7 @@ namespace Jwl
 		float VectorLength(vec2&);
 
 		//Class Member Variables
-		int CurrentNode;
+		int CurrentNode = 0;
 		Path AlienPath;
 		vec2 Velocity = vec2(-1, -2);
 		vec2 Position = vec2(Owner.Transform.Position.x, Owner.Transform.Position.y);

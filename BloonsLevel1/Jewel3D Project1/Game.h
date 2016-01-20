@@ -31,6 +31,7 @@ public:
 	Entity MainCamera;
 	Entity RootNode;
 	Entity AlienSprite;
+	Entity MousePosText;
 	
 	/* Assets */
 	ResourceLibrary AssetLoader;
