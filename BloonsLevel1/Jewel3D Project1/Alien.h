@@ -5,8 +5,7 @@
 #include "Path.h"
 //Class representing a single alien
 
-namespace Jwl
-{
+
 	class Alien : public Component<Alien>
 	{
 	public:
@@ -33,6 +32,7 @@ namespace Jwl
 		vec2 Position = vec2(Owner.Transform.Position.x, Owner.Transform.Position.y);
 		vec2 Steering = vec2::Zero();
 		vec2 Target;
+		bool DoneMoving = false;
 	};
-}
+
 

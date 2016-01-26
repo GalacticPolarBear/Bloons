@@ -3,12 +3,11 @@
 #include <Jewel_Input/InputKeyboard.h>
 #include <Jewel_OS/Windows/Console.h>
 
-#define MAX_FORCE 1.8
-#define MAX_VELOCITY 2.1
-float Mass = 3;
+#define MAX_FORCE 1.2
+#define MAX_VELOCITY 3.1
+float Mass = 5;
 bool startPath = false;
-namespace Jwl
-{
+
 	
 	Alien::Alien(Entity &owner)
 		: Component(owner)
@@ -18,7 +17,7 @@ namespace Jwl
 		
 	void Alien::Update(float deltaTime)
 	{
-		Position = vec2(Owner.Transform.Position.x, Owner.Transform.Position.y);
+		Position = Owner.Transform.Position.ToVec2();
 		
 		//this->Owner.Transform.Position += vec3(1,1,0);	
 		/*
@@ -36,46 +35,44 @@ namespace Jwl
 		
 		Owner.Transform.Position += vec3(Velocity.x, Velocity.y, 0);
 		*/
-		if (Input::GetKeyBoardButton(Space))
-		{
-			startPath = !startPath;
-		}
-		if (startPath)
-		{
-			Steering = PathFollowing();
-
-			Truncate(Steering, MAX_FORCE);
-			Steering *= 1 / Mass;
-
-			Velocity += Steering;
-			Truncate(Velocity, MAX_VELOCITY);
-			Owner.Transform.Position += vec3(Velocity.x, Velocity.y, 0);
-			
-		}
 		
+		Steering = PathFollowing();
+
+		Truncate(Steering, MAX_FORCE);
+		
+		Steering *= 1 / Mass;
+
+		Velocity += Steering;
+		Truncate(Velocity, MAX_VELOCITY);
+  		Owner.Transform.Position += vec3(Velocity.x, Velocity.y, 0);		
 	}
 	
 	vec2 Alien::PathFollowing()
 	{
 		auto target = vec2::Zero();
 
-		if (AlienPath.GetNodes().size() > 0)
+		if (AlienPath.GetNodes().size() > 0 && !DoneMoving)
 		{
 			auto nodes = AlienPath.GetNodes();
 
 			target = nodes[CurrentNode];
-			
-			if (Distance(vec2(Owner.Transform.Position.x, Owner.Transform.Position.y), target) <= 10)
-			{
-				CurrentNode += 1;
 
-				if (CurrentNode > nodes.size()-1)
+			//if (Distance(vec2(Owner.Transform.Position.x, Owner.Transform.Position.y), target) <= 2)
+			//(Owner.Transform.Position.ToVec2() - target).Length() < = 2))
+			if((Owner.Transform.Position.ToVec2() - target).Length() <= 20)
+			{
+				CurrentNode ++;
+
+				if (CurrentNode > nodes.size() - 1)
 				{
 					CurrentNode = 0;
 					target = nodes[0];
+					//DoneMoving = true;
 				}
 			}
 		}
+		else
+			return vec2::Zero();
 
 		return Seek(target);
 	}
@@ -87,17 +84,30 @@ namespace Jwl
 	
 	vec2 Alien::Seek(vec2 &target)
 	{
+		float slowRadius = 100.f;
 		//Force to return
 		vec2 force = vec2::Zero();
 		
+		//(Owner.Transform.Position.ToVec2() - target).Length();
+
 		//Getting a vector between the target and the sprite's position.
 		vec2 DesiredVelocity = target - Position;
 		
-		//Normalizing the vector because we only really want the direction without it's magnitude.
+		float Distance = DesiredVelocity.Length();
+
+		//Normalizing the vector because we only really want the direction without its magnitude.
 		DesiredVelocity.Normalize();
 		
+		if (Distance < slowRadius)
+		{
+ 			DesiredVelocity *= MAX_VELOCITY * (Distance/slowRadius);
+		}
+		else 
+		{
+			DesiredVelocity *= MAX_VELOCITY;
+		}
 		//Multiplying by the Max_velocity so that we have a force which pushes towards our Seek target.
-		DesiredVelocity *= MAX_VELOCITY;
+		
 		
 		//Getting the final force which will represent the vector between the straight line target and our current velocity.
 		force = DesiredVelocity - Velocity;
@@ -122,4 +132,3 @@ namespace Jwl
 		return sqrtf((temp.x*temp.x) + (temp.y * temp.y));
 	}
 	
-}

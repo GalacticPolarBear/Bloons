@@ -11,7 +11,7 @@ class Path
 		~Path();
 		void AddNode(const vec2&);
 		std::vector<vec2> GetNodes();
-			
+		void SetPath(Path &);
 	private:
 		std::vector<vec2> Nodes;
 

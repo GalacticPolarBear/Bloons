@@ -19,3 +19,8 @@ std::vector<vec2> Path::GetNodes()
 {
 	return Nodes;
 }
+
+void Path::SetPath(Path &newPath)
+{
+	Nodes = newPath.GetNodes();
+}
