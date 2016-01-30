@@ -35,10 +35,10 @@ bool Grid::CheckOccupyStatus(vec2 &MousePos)
 int Grid::GetIndex(vec2 &coords)
 {
 	//Row major index calculation.
-	int colIndex = (coords.y / CellSize) - 1;
-	int rowIndex = (coords.x / CellSize) - 1;
-	
-	return (rowIndex * Columns) + colIndex;
+	int colIndex = (coords.x / CellSize);
+	int rowIndex = (coords.y / CellSize);
+	int testInt = (rowIndex * Columns) + colIndex;
+	return testInt;
 }
 
 void Grid::SetPathOccupied(std::string filePath)
@@ -125,7 +125,7 @@ bool Grid::CanBuild(vec2 &MousePos)
 		}
 	}
 
-	//We have gotten this far so that means we have our 8 spots to check.
+	//We have gotten this far so that means we have our 8 spots to check and our initial location.
 	for (std::shared_ptr<Cell> cell : checkCells)
 	{
 		if (cell->GetOccupied())

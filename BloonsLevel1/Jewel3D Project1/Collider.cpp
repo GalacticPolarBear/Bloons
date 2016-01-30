@@ -2,23 +2,22 @@
 
 Collider::Collider(Entity &owner) : Component(owner) 
 {
-
+	
 }
+
+Collider::Collider(Entity & owner, vec2 & Scale, ColliderType type) : Component(owner)
+{
+	Size = Scale;
+	Type = type;
+}
+
+
 
 Collider::Collider(Entity & owner,  vec2 & Scale) : Component(owner)
 {
 	SetSize(Scale);
 }
 
-int Collider::GetLayer()
-{
-	return Layer;
-}
-
-void Collider::SetLayer(int & newLayer)
-{
-	Layer = newLayer;
-}
 
 vec2 Collider::GetSize()
 {

@@ -5,6 +5,14 @@
 
 using namespace Jwl;
 
+//What it's attached to
+enum ColliderType {
+	ALIEN,
+	TOWER,
+	UI,
+	BULLET
+};
+
 class Collider : public Component<Collider>
 {
 
@@ -14,12 +22,9 @@ public:
 	Collider(const Collider &) = delete;
 	Collider &operator=(const Collider &) = delete;
 	Collider (Entity &owner);
+	Collider(Entity &owner, vec2& Scale, ColliderType = ALIEN);
 	Collider(Entity &owner, vec2& Scale);
 	virtual ~Collider() = default;
-	
-
-	int GetLayer();
-	void SetLayer(int&);
 
 	vec2 GetSize();
 	void SetSize(vec2 &);
@@ -27,9 +32,10 @@ public:
 	bool CheckBoxCollision(Collider&);
 	bool CheckPointCollision(vec2&);
 		
-		
+	ColliderType Type;
+
 private:
 	vec2 Size;
-	int Layer;
+	
 };
 

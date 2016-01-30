@@ -1,13 +1,10 @@
 #include "Alien.h"
-#include <math.h>
-#include <Jewel_Input/InputKeyboard.h>
-#include <Jewel_OS/Windows/Console.h>
+
 
 #define MAX_FORCE 1.2
 #define MAX_VELOCITY 3.1
-float Mass = 5;
-bool startPath = false;
 
+bool startPath = false;
 	
 	Alien::Alien(Entity &owner)
 		: Component(owner)
@@ -17,34 +14,18 @@ bool startPath = false;
 		
 	void Alien::Update(float deltaTime)
 	{
-		Position = Owner.Transform.Position.ToVec2();
-		
-		//this->Owner.Transform.Position += vec3(1,1,0);	
-		/*
-				Target = vec2(Input::GetMouseX(), -(Input::GetMouseY() - Console::GetScreenHeight()));
-		
-		Steering = Seek(Target);
-		
-		Truncate(Steering, MAX_FORCE);
-	    Steering *= 1 / Mass;
-		
-		Velocity += Steering;
-		
-		Velocity.Normalize();
-		//Velocity *= deltaTime;
-		
-		Owner.Transform.Position += vec3(Velocity.x, Velocity.y, 0);
-		*/
-		
-		Steering = PathFollowing();
+		if (!DoneMoving)
+		{
+			Position = Owner.Transform.Position.ToVec2();
 
-		Truncate(Steering, MAX_FORCE);
-		
-		Steering *= 1 / Mass;
+			Steering = PathFollowing();
+			Truncate(Steering, MAX_FORCE);
+			Steering *= 1 / Mass;
 
-		Velocity += Steering;
-		Truncate(Velocity, MAX_VELOCITY);
-  		Owner.Transform.Position += vec3(Velocity.x, Velocity.y, 0);		
+			Velocity += Steering;
+			Truncate(Velocity, MAX_VELOCITY);
+			Owner.Transform.Position += vec3(Velocity.x, Velocity.y, 0);
+		}
 	}
 	
 	vec2 Alien::PathFollowing()
@@ -57,8 +38,6 @@ bool startPath = false;
 
 			target = nodes[CurrentNode];
 
-			//if (Distance(vec2(Owner.Transform.Position.x, Owner.Transform.Position.y), target) <= 2)
-			//(Owner.Transform.Position.ToVec2() - target).Length() < = 2))
 			if((Owner.Transform.Position.ToVec2() - target).Length() <= 20)
 			{
 				CurrentNode ++;
@@ -66,20 +45,16 @@ bool startPath = false;
 				if (CurrentNode > nodes.size() - 1)
 				{
 					CurrentNode = 0;
-					target = nodes[0];
-					//DoneMoving = true;
+					//target = nodes[0];
+					DoneMoving = true;
+					//Notify Game we hit the end so player loses a life.
+					EventData e(SCREEN_COLL, static_cast<void *>(&Owner));
+					EventManager::PostEvent(e);
 				}
 			}
 		}
-		else
-			return vec2::Zero();
-
+		
 		return Seek(target);
-	}
-	
-	float Alien::Distance(vec2 & a, vec2 & b)
-	{
-		return sqrtf((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
 	}
 	
 	vec2 Alien::Seek(vec2 &target)
@@ -106,9 +81,7 @@ bool startPath = false;
 		{
 			DesiredVelocity *= MAX_VELOCITY;
 		}
-		//Multiplying by the Max_velocity so that we have a force which pushes towards our Seek target.
-		
-		
+				
 		//Getting the final force which will represent the vector between the straight line target and our current velocity.
 		force = DesiredVelocity - Velocity;
 		return force;
@@ -118,7 +91,7 @@ bool startPath = false;
 	//This function adjusts the Vector so its x and y values do not exceed the max scalar value (Typically the MAX_FORCE).
 	void Alien::Truncate(vec2 &vec, const float &scalar)
 	{
-		float retVal = scalar / VectorLength(vec);
+		float retVal = scalar / vec.Length();
 		if (retVal < 1.0) {
 			retVal = 1.0;
 		}
@@ -127,8 +100,5 @@ bool startPath = false;
 		}
 		vec *= retVal;
 	}
-	float Alien::VectorLength(vec2 &temp)
-	{
-		return sqrtf((temp.x*temp.x) + (temp.y * temp.y));
-	}
+
 	
