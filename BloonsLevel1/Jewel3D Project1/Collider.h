@@ -2,14 +2,14 @@
 #include <Jewel_Entity/Components/Base.h>
 #include <Jewel_Entity\Entity.h>
 #include <Jewel_Math/Vector.h>
-
+#include <math.h> 
 using namespace Jwl;
 
 //What it's attached to
 enum ColliderType {
 	ALIEN,
 	TOWER,
-	UI,
+	UIELEMENT,
 	BULLET
 };
 
@@ -31,9 +31,9 @@ public:
 
 	bool CheckBoxCollision(Collider&);
 	bool CheckPointCollision(vec2&);
-		
+	bool CheckCircleBoxCollision(Collider&);
 	ColliderType Type;
-
+	float Radius = 0;
 private:
 	vec2 Size;
 	

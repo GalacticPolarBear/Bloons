@@ -15,7 +15,7 @@ public:
 	Bullet &operator=(const Bullet &) = delete;
 	
 	Bullet(Entity &owner);
-	Bullet(Entity &owner, vec2&);
+	Bullet(Entity &owner, vec2&, int );
 	void Update();
 
 	virtual ~Bullet() = default;

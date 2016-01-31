@@ -67,6 +67,20 @@ void Grid::SetPathOccupied(std::string filePath)
 	pathCoords.close();
 }
 
+void Grid::SetAreaOccupied(vec2 &area)
+{
+	int curIndex = GetIndex(area);
+	Cells[curIndex]->SetOccupied(true);
+	Cells[curIndex - 1]->SetOccupied(true);
+	Cells[curIndex + 1]->SetOccupied(true);
+	Cells[curIndex + Columns]->SetOccupied(true);
+	Cells[curIndex - Columns]->SetOccupied(true);
+	Cells[curIndex + Columns - 1]->SetOccupied(true);
+	Cells[curIndex + Columns + 1]->SetOccupied(true);
+	Cells[curIndex - Columns - 1]->SetOccupied(true);
+	Cells[curIndex - Columns + 1]->SetOccupied(true);
+}
+
 bool Grid::CanBuild(vec2 &MousePos)
 {
 	//This function is going to check the occupy status of all the cells around a position.

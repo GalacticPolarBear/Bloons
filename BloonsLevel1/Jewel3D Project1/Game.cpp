@@ -5,9 +5,9 @@ Game::Game(ConfigTable &config)
 	: Config(config)
 {
 	EventManager::Subscribe(this, BULLET_COLL);
-	EventManager::Subscribe(this, BUILD_COLL);
 	EventManager::Subscribe(this, TOWER_COLL);
 	EventManager::Subscribe(this, SCREEN_COLL);
+	EventManager::Subscribe(this, SHOOT_BULLET);
 }
 
 Game::~Game()
@@ -33,32 +33,28 @@ void Game::EventCallBack(EventData * e)
 		//If the damage was enough to kill the Alien we need the index of the alien and the index for the projectile.
 		Entity *alien = reinterpret_cast<Entity *>(e->Int2);
 		Entity *bullet = reinterpret_cast<Entity *>(e->Int1);
-		auto alienIndex = std::find(AllAliens.begin(), AllAliens.end(), alien);
-		auto bulletIndex = std::find(Bullets.begin(), Bullets.end(), bullet);
-		AllAliens[alienIndex - AllAliens.begin()]->
+		
+	
+		//AllAliens[alienIndex - AllAliens.begin()]->
 		//alien->GetComponent<Alien>()->Health -= bullet.
 	}
-
-    if (e->Type == BUILD_COLL)
-	{
-		//Need to enter build mode if the player has enough money to purchase a tower. 
-		//Then create a tower and attach it to the player's cursor. 
-		Entity *tower = reinterpret_cast<Entity *>(e->Int1);
-		Entity *alien = reinterpret_cast<Entity *>(e->Int2);
-		
-		//auto alienIndex = std::find(AllAliens.begin(), AllAliens.end(), alien);
-		//auto bulletIndex = std::find(Bullets.begin(), Bullets.end(), bullet);
-	}
-
+	 
 	if (e->Type == SCREEN_COLL)
 	{
 		PlayerHealth --;
 		Entity *remove = static_cast<Entity*>(e->Void);
-		auto alienIndex = std::find(AllAliens.begin(), AllAliens.end(), remove);
 		MainGroup.RemoveEntity(*remove);
-	    AllAliens.erase(alienIndex);
 	}
+
+	if (e->Type == SHOOT_BULLET)
+	{
+		PlayerHealth--;
+		Entity *remove = static_cast<Entity*>(e->Void);
+		MainGroup.RemoveEntity(*remove);
+	}
+
 }
+
 void Game::MakeAlienWave(int num, int spacing, Path& path)
 {
 	if (num == 0)
@@ -66,28 +62,82 @@ void Game::MakeAlienWave(int num, int spacing, Path& path)
 
 	for (int i = 0; i < num; i++)
 	{
-		AllAliens.push_back(new Entity());
+		Entity * newEnt = new Entity();
 
-		AllAliens.back()->AddComponent<Sprite>();
-		AllAliens.back()->AddComponent<Material>()->Program = SpriteShader;
-		AllAliens.back()->GetComponent<Material>()->Textures.push_back(TextureSlot(SpriteTexture, 0));
-
-		AllAliens.back()->GetComponent<Material>()->SetBlendMode(BlendFunc::Linear);
-		AllAliens.back()->GetComponent<Sprite>()->SetCenteredX(true);
-		AllAliens.back()->GetComponent<Sprite>()->SetCenteredY(true);
-
-		AllAliens.back()->Transform.Scale = (vec3(50, 50, 1));
-		AllAliens.back()->Transform.Position = vec3(802, 730 + (i * spacing) + 5,  (float)i / num);
-
-		AllAliens.back()->AddComponent<Alien>();
-		AllAliens.back()->GetComponent<Alien>()->AlienPath.SetPath(path);
-
-		MainGroup.AddEntity(*AllAliens.back());
+		newEnt->AddComponent<Sprite>();
+		newEnt->AddComponent<Material>()->Program = SpriteShader;
+		newEnt->GetComponent<Material>()->Textures.push_back(TextureSlot(SpriteTexture, 0));
+		newEnt->GetComponent<Material>()->SetBlendMode(BlendFunc::Linear);
+		newEnt->GetComponent<Sprite>()->SetCenteredX(true);
+		newEnt->GetComponent<Sprite>()->SetCenteredY(true);
+		newEnt->Transform.Scale = (vec3(50, 50, 1));
+		newEnt->Transform.Position = vec3(802, 735 + (i * spacing),  (float)i / num);
+		newEnt->AddComponent<Alien>();
+		newEnt->GetComponent<Alien>()->AlienPath.SetPath(path);
+		newEnt->AddComponent<Collider>(vec2(50,50), ALIEN);
+		MainGroup.AddEntity(*newEnt);
 	}
 }
-void Game::MakeBullet(vec2 & Traj)
+
+//Create a Tower and set its position to the Mouse Cursor.
+Entity* Game::MakeTower(BuildUnit toBuild)
 {
+	//Make a Tower 
+	Entity * toReturn = new Entity();
+	toReturn->AddComponent<Sprite>();
+	toReturn->AddComponent<Material>()->Program = TowerShader;
+	
+	if (toBuild == TOWERRED)
+		toReturn->GetComponent<Material>()->Textures.push_back(TextureSlot(TowerRed, 0));
+	else
+		toReturn->GetComponent<Material>()->Textures.push_back(TextureSlot(TowerBlue, 0));
+	
+	toReturn->GetComponent<Material>()->SetBlendMode(BlendFunc::Linear);
+	toReturn->GetComponent<Sprite>()->SetCenteredX(true);
+	toReturn->GetComponent<Sprite>()->SetCenteredY(true);
+	toReturn->Transform.Scale = (vec3(50, 50, 1));
+	toReturn->Transform.Position = vec3(Input::GetMouseX(), Input::GetMouseY(), 1);
+	toReturn->AddComponent<Tower>();
+	toReturn->AddComponent<Collider>(vec2(50, 50), TOWER);
+
+	return toReturn;
 }
+
+//Did we collide with a UI element?
+bool Game::CheckTower()
+{
+	for (auto ui : UI)
+	{
+		if (ui->GetComponent<Collider>()->CheckPointCollision(vec2(Input::GetMouseX(), Input::GetMouseY())))
+		{
+			if (PlayerGold >= ui->GetComponent<Tower>()->Cost)
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+Entity* Game::MakeBullet(vec3& startPos, vec2 & traj)
+{
+	//Make a Bullet 
+	Entity * toReturn = new Entity();
+	toReturn->AddComponent<Sprite>();
+	toReturn->AddComponent<Material>()->Program = ProjShader;
+	toReturn->GetComponent<Material>()->Textures.push_back(TextureSlot(ProjTexture, 0));
+	
+	toReturn->GetComponent<Material>()->SetBlendMode(BlendFunc::Linear);
+	toReturn->GetComponent<Sprite>()->SetCenteredX(true);
+	toReturn->GetComponent<Sprite>()->SetCenteredY(true);
+	toReturn->Transform.Scale = (vec3(9, 19, 1));
+	toReturn->AddComponent<Collider>(vec2(9, 19), BULLET);
+
+	return toReturn;
+}
+
+
 bool Game::Init()
 {
 	//Load game assets here...
@@ -122,6 +172,15 @@ bool Game::Init()
 	SpriteTexture = AssetLoader.LoadTexture("./Assets/Textures/Alien.png");
 	SpriteShader = AssetLoader.LoadShader("./Assets/Shaders/Default/Sprite.shader");
 
+	TowerRed = AssetLoader.LoadTexture("./Assets/Textures/GnomeRed.png");
+	TowerShader = AssetLoader.LoadShader("./Assets/Shaders/Default/Sprite.shader");
+	
+	TowerBlue = AssetLoader.LoadTexture("./Assets/Textures/GnomeBlue.png");
+	
+	ProjTexture = AssetLoader.LoadTexture("./Assets/Textures/shroomProjectile.png");
+	ProjShader = AssetLoader.LoadShader("./Assets/Shaders/Default/Sprite.shader");
+	
+	
 	if (!SpriteTexture) return false;
 	if (!SpriteShader) return false;
 
@@ -156,7 +215,7 @@ bool Game::Init()
 	AlienPath.AddNode(vec2(608, 512));
 	AlienPath.AddNode(vec2(349, 493));
 	AlienPath.AddNode(vec2(348, 143));
-	AlienPath.AddNode(vec2(80, 117));
+	AlienPath.AddNode(vec2(0, 117));
 	
 	Tower1.GetComponent<Material>()->SetBlendMode(BlendFunc::Linear);
 	Tower1.GetComponent<Sprite>()->SetCenteredX(true);
@@ -168,6 +227,8 @@ bool Game::Init()
 	Square1.GetComponent<Sprite>()->SetCenteredX(true);
 	Square1.GetComponent<Sprite>()->SetCenteredY(true);
 	Square1.Transform.Scale = (vec3(53, 53, 1));
+	Square1.AddComponent<Tower>();
+	Square1.AddComponent<Collider>(vec2(53, 53), UIELEMENT);
 	Square1.Transform.Position = vec3(400, 660, 0.3);
 
 	Tower2.GetComponent<Material>()->SetBlendMode(BlendFunc::Linear);
@@ -175,12 +236,18 @@ bool Game::Init()
 	Tower2.GetComponent<Sprite>()->SetCenteredY(true);
 	Tower2.Transform.Scale = (vec3(50, 50, 1));
 	Tower2.Transform.Position = vec3(531, 660, 1);
-
+	
 	Square2.GetComponent<Material>()->SetBlendMode(BlendFunc::Linear);
 	Square2.GetComponent<Sprite>()->SetCenteredX(true);
 	Square2.GetComponent<Sprite>()->SetCenteredY(true);
-	Square2.Transform.Scale = (vec3(50, 50, 1));
+	Square2.Transform.Scale = (vec3(53, 53, 1));
+	Square2.AddComponent<Collider>(vec2(53, 53), UIELEMENT);
+	Square2.AddComponent<Tower>()->Cost = 200;
 	Square2.Transform.Position = vec3(531, 660, 0.3);
+
+	UI.push_back(&Square1);
+	UI.push_back(&Square2);
+	
 
 	//Add to be rendered.
 	MainGroup.AddEntity(GameBG);
@@ -214,13 +281,49 @@ void Game::Exit()
 
 void Game::Update(float deltaTime)
 {
+		
+	if (BuildMode)
+	{
+		if (Input::GetMouseButton(LButton) && CanPlaceTower)
+		{
+			if (GameGrid.CanBuild(vec2(Input::GetMouseX(), Input::GetMouseY())))
+			{
+				ToBuild->Transform.Position = vec3(Input::GetMouseX(), Input::GetMouseY(), 1);
+				GameGrid.SetAreaOccupied(vec2(Input::GetMouseX(), Input::GetMouseY()));
+				//PlayerGold -= ToBuild->GetComponent<Tower>()->Cost;
+				MainGroup.RemoveEntity(*ToBuild);
+				Towers.push_back(ToBuild);
+				MainGroup.AddEntity(*Towers.back());
+				ToBuild = nullptr;
+				CanPlaceTower = false;
+				BuildMode = false;
+			}
+		}
+		
+		else if (!Input::GetMouseButton(LButton))
+		{
+			CanPlaceTower = true;
+		}
+	}
+
+	else
+	{
+		if (Input::GetMouseButton(LButton) && CheckTower())
+		{
+			BuildMode = true;
+			ToBuild = MakeTower(TOWERRED);
+			MainGroup.AddEntity(*ToBuild);
+		}
+	}
+
+	//Exit Build Mode
 	if (Input::GetKeyBoardButton(Esc))
 	{
-		Console::Exit();
+		BuildMode = false;
+		MainGroup.RemoveEntity(*ToBuild);
+		ToBuild = nullptr;
 	}
-	
-	MousePosText.GetComponent<Text>()->String = "Mouse X = " + std::to_string(Input::GetMouseX()) + " Mouse Y = " + std::to_string(Input::GetMouseY());
-		
+
 	if (Input::GetKeyBoardButton(Space))
 	{
 		startpath = !startpath;
@@ -239,6 +342,11 @@ void Game::Update(float deltaTime)
 	
 	EventManager::DrainEventQueue();
 
+	if (ToBuild != nullptr)
+	{
+		ToBuild->Transform.Position = vec3(Input::GetMouseX(), Input::GetMouseY(), 1);
+	}
+	
 	Tower1.Transform.RotateZ(.5);
 	Tower2.Transform.RotateZ(.5);
 

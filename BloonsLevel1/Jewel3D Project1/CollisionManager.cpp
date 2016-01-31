@@ -17,26 +17,22 @@ void CollisionManager::CheckCollisions()
 			//Bullet vs. Alien
 			if (collVec[i]->Type == BULLET && collVec[k]->Type == ALIEN)
 			{
-				EventData e(BULLET_COLL, *reinterpret_cast<int *>(&collVec[i]->Owner), *reinterpret_cast<int *>(&collVec[k]->Owner));
-				EventManager::PostEvent(e);
+				if (collVec[i]->CheckBoxCollision(*collVec[k]))
+				{
+					EventData e(BULLET_COLL, *reinterpret_cast<int *>(&collVec[i]->Owner), *reinterpret_cast<int *>(&collVec[k]->Owner));
+					EventManager::PostEvent(e);
+				}
 			}
 			
 			//Tower vs. Alien Collision
 			else if ((collVec[i]->Type == TOWER && collVec[k]->Type == ALIEN))
 			{
-				EventData e(TOWER_COLL, *reinterpret_cast<int *>(&collVec[i]->Owner), *reinterpret_cast<int *>(&collVec[k]->Owner));
-				EventManager::PostEvent(e);
-			}
-			
-			//Mouse vs. UI 
-			else if (collVec[i]->Type == UI)
-			{
-				if (collVec[i]->CheckPointCollision(vec2((float)Input::GetMouseX(), (float)Input::GetMouseY())))
+				if (collVec[i]->CheckCircleBoxCollision(*collVec[k]))
 				{
-					EventData e(BUILD_COLL, static_cast<void *>(&collVec[i]->Owner));
+					EventData e(TOWER_COLL, *reinterpret_cast<int *>(&collVec[i]->Owner), *reinterpret_cast<int *>(&collVec[k]->Owner));
 					EventManager::PostEvent(e);
 				}
-			}
+			}			
 		}
 	}
 }
