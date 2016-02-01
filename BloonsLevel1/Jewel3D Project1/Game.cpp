@@ -22,36 +22,61 @@ void Game::EventCallBack(EventData * e)
 {
 	if (e->Type == TOWER_COLL)
 	{
-		//Need to add the index from the aliens array as a target for the Tower.
-		//Both are received from the Message.
-		
+		//Need to add Alien as a target for the Tower
+		Entity *tower = reinterpret_cast<Entity *>(e->Int2);
+		Entity *alien = reinterpret_cast<Entity *>(e->Int1);
+		//If Target is not in array then add it.
+		if (!tower->GetComponent<Tower>()->FindTarget(alien))
+		{
+			tower->GetComponent<Tower>()->AddTarget(alien);
+		}
 	}
 
-	 if (e->Type == BULLET_COLL)
+	 else if (e->Type == BULLET_COLL)
 	{
-		//Need to perform the damage and delete the projectile.
-		//If the damage was enough to kill the Alien we need the index of the alien and the index for the projectile.
-		Entity *alien = reinterpret_cast<Entity *>(e->Int2);
 		Entity *bullet = reinterpret_cast<Entity *>(e->Int1);
-		
-	
-		//AllAliens[alienIndex - AllAliens.begin()]->
-		//alien->GetComponent<Alien>()->Health -= bullet.
+		Entity *alien = reinterpret_cast<Entity *>(e->Int2);
+
+		//Need to perform the damage and delete the projectile.
+
+		if (alien->HasComponent<Alien>())
+		{
+			//alien->GetComponent<Alien>()->Health -= bullet->GetComponent<Bullet>()->Damage;
+			PlayerGold += alien->GetComponent<Alien>()->GoldGain;
+			alien->RemoveComponent<Alien>();
+			alien->RemoveComponent<Collider>();
+			for (auto towers : Tower::GetAll())
+			{
+				towers->RemoveTarget(alien);
+			}
+			//bullet->GetComponent<Bullet>()->SpawningTower->GetComponent<Tower>()->RemoveTarget(alien);
+			bullet->RemoveComponent<Collider>();
+			bullet->RemoveComponent<Bullet>();
+			MainGroup.RemoveEntity(*bullet);
+			MainGroup.RemoveEntity(*alien);
+		}
+		//If the damage was enough to kill the Alien we need to remove the Alien and reward player
+				
+			
 	}
-	 
-	if (e->Type == SCREEN_COLL)
+	 else if (e->Type == SHOOT_BULLET)
+	 {
+		 Entity *callingTower = static_cast<Entity*>(e->Void);
+		 //Make a bullet
+		 Entity * newBullet = MakeBullet(callingTower);
+		  //Add to scene
+		 MainGroup.AddEntity(*newBullet);
+		
+	 }
+
+	else if (e->Type == SCREEN_COLL)
 	{
 		PlayerHealth --;
 		Entity *remove = static_cast<Entity*>(e->Void);
 		MainGroup.RemoveEntity(*remove);
 	}
 
-	if (e->Type == SHOOT_BULLET)
-	{
-		PlayerHealth--;
-		Entity *remove = static_cast<Entity*>(e->Void);
-		MainGroup.RemoveEntity(*remove);
-	}
+	
 
 }
 
@@ -71,7 +96,7 @@ void Game::MakeAlienWave(int num, int spacing, Path& path)
 		newEnt->GetComponent<Sprite>()->SetCenteredX(true);
 		newEnt->GetComponent<Sprite>()->SetCenteredY(true);
 		newEnt->Transform.Scale = (vec3(50, 50, 1));
-		newEnt->Transform.Position = vec3(802, 735 + (i * spacing),  (float)i / num);
+		newEnt->Transform.Position = vec3(802, 735 + (i * spacing),  (float)i / num + 0.005);
 		newEnt->AddComponent<Alien>();
 		newEnt->GetComponent<Alien>()->AlienPath.SetPath(path);
 		newEnt->AddComponent<Collider>(vec2(50,50), ALIEN);
@@ -80,7 +105,7 @@ void Game::MakeAlienWave(int num, int spacing, Path& path)
 }
 
 //Create a Tower and set its position to the Mouse Cursor.
-Entity* Game::MakeTower(BuildUnit toBuild)
+Entity* Game::MakeTower(BuildType toBuild)
 {
 	//Make a Tower 
 	Entity * toReturn = new Entity();
@@ -97,9 +122,8 @@ Entity* Game::MakeTower(BuildUnit toBuild)
 	toReturn->GetComponent<Sprite>()->SetCenteredY(true);
 	toReturn->Transform.Scale = (vec3(50, 50, 1));
 	toReturn->Transform.Position = vec3(Input::GetMouseX(), Input::GetMouseY(), 1);
-	toReturn->AddComponent<Tower>();
-	toReturn->AddComponent<Collider>(vec2(50, 50), TOWER);
-
+	toReturn->AddComponent<Tower>(toBuild);
+		
 	return toReturn;
 }
 
@@ -110,8 +134,11 @@ bool Game::CheckTower()
 	{
 		if (ui->GetComponent<Collider>()->CheckPointCollision(vec2(Input::GetMouseX(), Input::GetMouseY())))
 		{
-			if (PlayerGold >= ui->GetComponent<Tower>()->Cost)
+			if (PlayerGold >= ui->GetComponent<Purchasable>()->Cost)
 			{
+				ToBuild = MakeTower(ui->GetComponent<Purchasable>()->Type);
+				ToBuild->GetComponent<Tower>()->Cost = ui->GetComponent<Purchasable>()->Cost;
+				MainGroup.AddEntity(*ToBuild);
 				return true;
 			}
 		}
@@ -120,7 +147,7 @@ bool Game::CheckTower()
 	return false;
 }
 
-Entity* Game::MakeBullet(vec3& startPos, vec2 & traj)
+Entity* Game::MakeBullet(Entity *tower)
 {
 	//Make a Bullet 
 	Entity * toReturn = new Entity();
@@ -132,8 +159,22 @@ Entity* Game::MakeBullet(vec3& startPos, vec2 & traj)
 	toReturn->GetComponent<Sprite>()->SetCenteredX(true);
 	toReturn->GetComponent<Sprite>()->SetCenteredY(true);
 	toReturn->Transform.Scale = (vec3(9, 19, 1));
-	toReturn->AddComponent<Collider>(vec2(9, 19), BULLET);
+	
 
+	vec2 traj = tower->GetComponent<Tower>()->CurrTarget->Transform.Position.ToVec2() - tower->Transform.Position.ToVec2();
+	traj.Normalize();
+	toReturn->AddComponent<Collider>(vec2(9, 19), BULLET);
+	//Set its position to the Tower's position
+	toReturn->Transform.Position = tower->Transform.Position;
+	//Set its bullet rotation
+	toReturn->Transform.Rotation = tower->Transform.Rotation;
+	toReturn->AddComponent<Bullet>(traj, tower->GetComponent<Tower>()->Damage, tower);
+	
+	
+	//Set its trajectory
+	
+	
+	
 	return toReturn;
 }
 
@@ -227,9 +268,9 @@ bool Game::Init()
 	Square1.GetComponent<Sprite>()->SetCenteredX(true);
 	Square1.GetComponent<Sprite>()->SetCenteredY(true);
 	Square1.Transform.Scale = (vec3(53, 53, 1));
-	Square1.AddComponent<Tower>();
 	Square1.AddComponent<Collider>(vec2(53, 53), UIELEMENT);
 	Square1.Transform.Position = vec3(400, 660, 0.3);
+	Square1.AddComponent<Purchasable>(100, TOWERRED);
 
 	Tower2.GetComponent<Material>()->SetBlendMode(BlendFunc::Linear);
 	Tower2.GetComponent<Sprite>()->SetCenteredX(true);
@@ -242,12 +283,11 @@ bool Game::Init()
 	Square2.GetComponent<Sprite>()->SetCenteredY(true);
 	Square2.Transform.Scale = (vec3(53, 53, 1));
 	Square2.AddComponent<Collider>(vec2(53, 53), UIELEMENT);
-	Square2.AddComponent<Tower>()->Cost = 200;
 	Square2.Transform.Position = vec3(531, 660, 0.3);
-
+	Square2.AddComponent<Purchasable>(200, TOWERBLUE);
+	
 	UI.push_back(&Square1);
 	UI.push_back(&Square2);
-	
 
 	//Add to be rendered.
 	MainGroup.AddEntity(GameBG);
@@ -260,7 +300,7 @@ bool Game::Init()
 	MainGroup.AddEntity(Tower2);
 	MakeAlienWave(30, 20, AlienPath);
 
-	//Setup Camera
+	//Setup Camera 
 	MainCamera.AddComponent<Camera>()->SetOrthograpic(Console::GetScreenHeight(), 0, 0, Console::GetScreenWidth(), -1, 1000);
 	MainCamera.Transform.Position = vec3(0.0f, 0.0f, 0.0f);
 	
@@ -290,10 +330,9 @@ void Game::Update(float deltaTime)
 			{
 				ToBuild->Transform.Position = vec3(Input::GetMouseX(), Input::GetMouseY(), 1);
 				GameGrid.SetAreaOccupied(vec2(Input::GetMouseX(), Input::GetMouseY()));
-				//PlayerGold -= ToBuild->GetComponent<Tower>()->Cost;
-				MainGroup.RemoveEntity(*ToBuild);
-				Towers.push_back(ToBuild);
-				MainGroup.AddEntity(*Towers.back());
+				ToBuild->AddComponent<Collider>(vec2(50, 50), TOWER);
+				PlayerGold -= ToBuild->GetComponent<Tower>()->Cost;
+				MainGroup.AddEntity(*ToBuild);
 				ToBuild = nullptr;
 				CanPlaceTower = false;
 				BuildMode = false;
@@ -311,8 +350,7 @@ void Game::Update(float deltaTime)
 		if (Input::GetMouseButton(LButton) && CheckTower())
 		{
 			BuildMode = true;
-			ToBuild = MakeTower(TOWERRED);
-			MainGroup.AddEntity(*ToBuild);
+			
 		}
 	}
 
@@ -322,6 +360,7 @@ void Game::Update(float deltaTime)
 		BuildMode = false;
 		MainGroup.RemoveEntity(*ToBuild);
 		ToBuild = nullptr;
+		CanPlaceTower = false;
 	}
 
 	if (Input::GetKeyBoardButton(Space))
@@ -329,17 +368,27 @@ void Game::Update(float deltaTime)
 		startpath = !startpath;
 	}
 	
+	//Update all the entities
 	if (startpath) 
 	{
-		
-		auto aliens = Alien::GetAll();
-
-		for (auto alien : aliens)
+		for (auto alien : Alien::GetAll())
 		{
-			alien->Update(deltaTime);
+ 			alien->Update(deltaTime);
 		}
 	}
 	
+	for (auto tower : Tower::GetAll())
+	{
+		tower->Update(deltaTime);
+	}
+
+	for (auto bull : Bullet::GetAll())
+	{
+		bull->Update();
+	}
+
+	CollManager.CheckCollisions();
+
 	EventManager::DrainEventQueue();
 
 	if (ToBuild != nullptr)

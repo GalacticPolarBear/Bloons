@@ -1,10 +1,10 @@
 #include "Tower.h"
 
-Tower::Tower(Entity &owner)
-	: Component(owner)
+Tower::Tower(Entity &owner, int cost) : Component(owner)
 {
-
+	Cost = cost;
 }
+
 
 void Tower::LookAtTarget(vec2& target)
 {
@@ -22,7 +22,6 @@ float Tower::Distance(vec2 &vecToCheck)
 {
 	vec2 Pos = Owner.Transform.Position.ToVec2();
 	return sqrt(((Pos.x - vecToCheck.x) * (Pos.x - vecToCheck.x)) + ((Pos.y - vecToCheck.y) * (Pos.y - vecToCheck.y)));
-
 }
 
 //Returns true if needle is in Targets and false if not.
@@ -40,23 +39,35 @@ void Tower::AddTarget(Entity *toAdd)
 
 void Tower::RemoveTarget(Entity *toRemove)
 {
-	Targets.erase(std::find(Targets.begin(), Targets.end(), toRemove));
-	Targets.shrink_to_fit();
+	if (!Targets.empty())
+	{
+		Targets.erase(std::find(Targets.begin(), Targets.end(), toRemove));
+		//CurrTarget = nullptr;
+	}
 }
 
 void Tower::Update(float deltaTime)
 {
 	ElapsedTime += deltaTime;
+	
 	if (!Targets.empty())
 	{
-		CurrTarget = Targets[0]->Transform.Position.ToVec2();
-		LookAtTarget(CurrTarget);
-		if(Distance(CurrTarget) <= Range)
-		if (ElapsedTime >= FireTimer)
+		CurrTarget = Targets[0];
+		LookAtTarget(CurrTarget->Transform.Position.ToVec2());
+
+		if (Distance(CurrTarget->Transform.Position.ToVec2()) <= Range)
 		{
-			ElapsedTime = 0;
-			EventData e(SHOOT_BULLET, static_cast<void *>(&Owner));
-			EventManager::PostEvent(e);
+			if (ElapsedTime >= FireTimer)
+			{
+				ElapsedTime = 0;
+				EventData e(SHOOT_BULLET, static_cast<void *>(&Owner));
+				EventManager::PostEvent(e);
+				Log("Firing bullet");
+			}
+		}
+		else
+		{
+			RemoveTarget(CurrTarget);
 		}
 
 	}

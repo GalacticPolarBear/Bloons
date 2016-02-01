@@ -4,6 +4,8 @@
 #include "CollisionManager.h"
 #include "Collider.h"
 #include "Tower.h"
+#include "Bullet.h"
+#include "Purchasable.h"
 #include<algorithm>
 #include <Jewel_Entity/Entity.h>
 #include <Jewel_Rendering/RenderGroup.h>
@@ -26,11 +28,7 @@
 
 using namespace Jwl;
 
-enum BuildUnit 
-{
-	TOWERRED,
-	TOWERBLUE
-};
+
 
 class Game : public EventListener
 {
@@ -47,9 +45,10 @@ public:
 	virtual void EventCallBack(EventData *e);
 	
 	void MakeAlienWave(int num, int spacing, Path& path);
-	Entity* MakeBullet(vec3&, vec2&);
+	
+	Entity* MakeBullet(Entity *);
 
-	Entity* MakeTower(BuildUnit);
+	Entity* MakeTower(BuildType);
 	
 	bool CheckTower();
 
@@ -86,9 +85,8 @@ public:
 
 	Entity * ToBuild = NULL;
 
-	/*Arrays for Managing*/
-	std::vector<Entity *> Towers;
-	std::vector<Entity *> Bullets;
+	CollisionManager CollManager;
+
 	std::vector<Entity *> UI;
 
 	/* Assets */
@@ -97,6 +95,7 @@ public:
 
 	int PlayerGold = 300;
 	int PlayerHealth = 100;
+	int numBullets = 0;
 	bool BuildMode = false;
 	bool CanPlaceTower = false;
 

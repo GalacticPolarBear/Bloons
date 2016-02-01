@@ -36,12 +36,10 @@ void Collider::SetSize(vec2 &newSize)
 
 bool Collider::CheckBoxCollision(Collider &rect)
 {
-		
 	return ((Owner.Transform.Position.x  < rect.Owner.Transform.Position.x + rect.GetSize().x) &&
-		(Owner.Transform.Position.x + GetSize().x > rect.Owner.Transform.Position.x) &&
-		(Owner.Transform.Position.y < rect.Owner.Transform.Position.y + rect.GetSize().y) &&
-		(Owner.Transform.Position.y + GetSize().y > rect.Owner.Transform.Position.y));
-	
+			(Owner.Transform.Position.x + GetSize().x > rect.Owner.Transform.Position.x) &&
+			(Owner.Transform.Position.y < rect.Owner.Transform.Position.y + rect.GetSize().y) &&
+			(Owner.Transform.Position.y + GetSize().y > rect.Owner.Transform.Position.y));
 }
 
 //Only for AABB
@@ -61,23 +59,24 @@ bool Collider::CheckPointCollision(vec2 &point)
 	return ((point.x >= tlEdge.x && point.x <= brEdge.x)
 		&& (point.y >= brEdge.y && point.y <= tlEdge.y));
 }
+
 //We treat this object as the Circle.
 bool Collider::CheckCircleBoxCollision(Collider &rect)
 {
-	vec2 circleDistance = vec2::Zero();
-	circleDistance.x = fabs(Owner.Transform.Position.x - rect.Owner.Transform.Position.x);
-	circleDistance.y = fabs(Owner.Transform.Position.y - rect.Owner.Transform.Position.y);
-	
+ 	vec2 circleDistance = vec2::Zero();
 	vec2 rectPos = rect.Owner.Transform.Position.ToVec2();
-
 	vec2 hwHHVec = rect.GetSize() / 2;
+	
+	circleDistance.x = abs(Owner.Transform.Position.x - rectPos.x);
+	circleDistance.y = abs(Owner.Transform.Position.y - rectPos.y);
+	
+	if (circleDistance.x > (hwHHVec.x + Radius)) return false;
+	if (circleDistance.y > (hwHHVec.y + Radius)) return false;
 
-	if (circleDistance.x > (rectPos.x + hwHHVec.x + Radius)) return false;
-	if (circleDistance.y > (rectPos.y + hwHHVec.y + Radius)) return false;
-
-	if (circleDistance.x <= (rectPos.x + hwHHVec.x)) return true;
-	if (circleDistance.y <= (rectPos.y + hwHHVec.y)) return true;
-
+	if (circleDistance.x <= (rectPos.x + hwHHVec.x) && (circleDistance.y <= (rectPos.y + hwHHVec.y)))
+	{
+		return true;
+	}
 	float cornerDistance_sq = ((circleDistance.x - (rectPos.x + hwHHVec.x)) * (circleDistance.x - (rectPos.x + hwHHVec.x)))
 		                      + ((circleDistance.y - (rectPos.y + hwHHVec.y)) * (circleDistance.y - (rectPos.y + hwHHVec.y)));
 	

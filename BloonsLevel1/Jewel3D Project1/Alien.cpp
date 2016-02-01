@@ -2,7 +2,7 @@
 
 
 #define MAX_FORCE 1.2
-#define MAX_VELOCITY 3.1
+#define MAX_VELOCITY 1
 
 bool startPath = false;
 	

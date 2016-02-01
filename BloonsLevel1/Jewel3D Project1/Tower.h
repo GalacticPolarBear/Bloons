@@ -8,13 +8,15 @@
 
 using namespace Jwl;
 
+
 class Tower : public Component<Tower>
 {
 public:
 	Tower() = delete;
 	Tower(const Tower &) = delete;
 	Tower &operator=(const Tower &) = delete;
-	Tower(Entity &owner);
+	Tower(Entity &owner, int cost);
+	
 	virtual ~Tower() = default;
 	
 	void LookAtTarget(vec2&);
@@ -29,11 +31,14 @@ public:
 	void RemoveTarget(Entity*);
 
 	void Update(float deltaTime);
-	
-	int Cost = 100;
+		
+	int Damage = 60;
+	int Cost = 0;
+
 	std::vector<Entity *> Targets;
-	vec2 CurrTarget = vec2::Zero();
-	float FireTimer = 2;
+	Entity* CurrTarget = nullptr;
+	
+	float FireTimer = .5;
 	float ElapsedTime = 0;
 	float Range = 88;
 };

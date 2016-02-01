@@ -15,14 +15,15 @@ public:
 	Bullet &operator=(const Bullet &) = delete;
 	
 	Bullet(Entity &owner);
-	Bullet(Entity &owner, vec2&, int );
+	Bullet(Entity &owner, vec2&, int , Entity *spawningTower);
 	void Update();
 
 	virtual ~Bullet() = default;
 
+	Entity *SpawningTower;
 	int Damage = 60;
 	vec2 Trajectory = vec2::Zero();
-	float Speed = 1.5f;
+	float Speed = 2;
 };
 
 

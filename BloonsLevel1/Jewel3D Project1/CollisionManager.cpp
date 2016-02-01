@@ -14,25 +14,28 @@ void CollisionManager::CheckCollisions()
 	{
 		for (int k = i + 1; k < collVec.size(); ++k)
 		{
-			//Bullet vs. Alien
-			if (collVec[i]->Type == BULLET && collVec[k]->Type == ALIEN)
+			//Tower vs. Alien Collision
+			if ((collVec[i]->Type == ALIEN && collVec[k]->Type == TOWER))
 			{
-				if (collVec[i]->CheckBoxCollision(*collVec[k]))
+				if (collVec[k]->CheckCircleBoxCollision(*collVec[i]))
 				{
-					EventData e(BULLET_COLL, *reinterpret_cast<int *>(&collVec[i]->Owner), *reinterpret_cast<int *>(&collVec[k]->Owner));
+					EventData e(TOWER_COLL, reinterpret_cast<int>(&collVec[i]->Owner), reinterpret_cast<int>(&collVec[k]->Owner));
 					EventManager::PostEvent(e);
 				}
 			}
-			
-			//Tower vs. Alien Collision
-			else if ((collVec[i]->Type == TOWER && collVec[k]->Type == ALIEN))
+
+			//Bullet vs. Alien
+			else if (collVec[i]->Type == ALIEN && collVec[k]->Type == BULLET)
 			{
-				if (collVec[i]->CheckCircleBoxCollision(*collVec[k]))
+				if (collVec[k]->CheckBoxCollision(*collVec[i]))
 				{
-					EventData e(TOWER_COLL, *reinterpret_cast<int *>(&collVec[i]->Owner), *reinterpret_cast<int *>(&collVec[k]->Owner));
-					EventManager::PostEvent(e);
+					EventData e(BULLET_COLL, reinterpret_cast<int>(&collVec[k]->Owner), reinterpret_cast<int>(&collVec[i]->Owner));
+					EventManager::PostImmediateEvent(e);
+					Log("Bullet event fired");
 				}
-			}			
+			}
+			
+			
 		}
 	}
 }
